@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+srun \
+     -J=interactive \
+     --nodes=1 \
+     --cpus-per-task=2 \
+     --mem=16G \
+     --time=10:00:00 \
+     --mail-user=$USER@umich.edu \
+     --mail-type=NONE \
+     --account=test \
+     --partition=standard \
+     --qos=normal \
+     --pty /bin/bash

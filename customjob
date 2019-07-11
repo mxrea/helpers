@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+read -e -p "Cores: " -i "1" CPUS
+read -e -p "Memory (G): " -i "16" MEM
+read -e -p "Time (Hours): " -i "80" TIME
+COMMAND=$@
+read -e -p "Command: " -i "$COMMAND" COMMAND
+
+name="${1/\.\//}"
+
+cat ~/opt/slurm/smalljob.slurm <(echo $COMMAND) | sbatch --job-name="$name"

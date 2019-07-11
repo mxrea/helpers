@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+REGEX='.+\.slurm\.out'
+
+if [[ $1 == "--force" ]]; then
+    find . -maxdepth 1 -regextype posix-extended -regex $REGEX -delete
+else
+    #TODAY=$(date +"%Y-%m-%d")
+    #mkdir -p cluster_logs/$TODAY
+    find . -maxdepth 1 -regextype posix-extended -regex $REGEX -exec bash -c 'TODAY=$(stat -c %y "$1" | cut -f 1 -d " "); mkdir -p cluster_logs/$TODAY; mv $1 cluster_logs/$TODAY' _ {} \;
+fi
