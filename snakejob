@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 
-# cat <(echo '--cluster' \
-
+# Create sbatch template to feed into snakemake
 sbatch_call()
 {
-echo "sbatch" \
-     "-J {cluster.job-name}" \
-     "--mail-user=$USER@umich.edu" \
-     "--mail-type=BEGIN,END,FAIL" \
-     "--output=%x-%j.slurm.out" \
-     "--nodes={cluster.nodes}" \
-     "--cpus-per-task={cluster.cpus-per-task}" \
-     "--mem={cluster.mem}" \
-     "--time={cluster.time}" \
-     "--account=test" \
-     "--partition=standard" \
-     "--qos=normal"
+    echo "sbatch" \
+         "-J {cluster.job-name}" \
+         "--mail-user=$USER@umich.edu" \
+         "--mail-type=BEGIN,END,FAIL" \
+         "--output=%x-%j.slurm.out" \
+         "--nodes={cluster.nodes}" \
+         "--cpus-per-task={cluster.cpus-per-task}" \
+         "--mem={cluster.mem}" \
+         "--time={cluster.time}" \
+         "--account=test" \
+         "--partition=standard" \
+         "--qos=normal"
 }
 
+# Merge local and global cluster config if local config exists
 make_cluster_config()
 {
     if [ -e cluster.json ]
