@@ -22,10 +22,10 @@ make_cluster_config()
 {
     if [ -e cluster.json ]
     then
-        echo ~/opt/snakemake/cluster.json
-    else
         jq -s '.[0] * .[1]' ~/opt/snakemake/cluster.json cluster.json > ~/opt/snakemake/combined.json
         echo ~/opt/snakemake/combined.json
+    else
+        echo ~/opt/snakemake/cluster.json
     fi
 }
 
