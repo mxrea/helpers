@@ -2,8 +2,12 @@
 
 REGEX='.+\.slurm\.out'
 
-if [[ $1 == "--force" ]]; then
+if [[ $1 == "--delete" ]]; then
     find . -maxdepth 1 -regextype posix-extended -regex $REGEX -delete
+elif [[ $1 != "" ]]; then
+    echo -e "\e[4mUsage\e[0m: cleanjobs [options]"
+    echo "-h / --help: Display this message"
+    echo "--delete: Delete cluster logs rather than moving them"
 else
     #TODAY=$(date +"%Y-%m-%d")
     #mkdir -p cluster_logs/$TODAY
