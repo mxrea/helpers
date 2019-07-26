@@ -17,4 +17,16 @@ echo "sbatch" \
      "--partition=standard" \
      "--qos=normal"
 }
-snakemake --latency-wait 60 --cluster-config cluster.json --cluster "$(sbatch_call)" $@
+
+make_cluster_config()
+{
+    if [ -e cluster.json ]
+    then
+        echo ~/opt/snakemake/cluster.json
+    else
+        jq -s '.[0] * .[1]' ~/opt/snakemake/cluster.json cluster.json > ~/opt/snakemake/combined.json
+        echo ~/opt/snakemake/combined.json
+    fi
+}
+
+snakemake --latency-wait 60 --cluster-config $(make_cluster_config) --cluster "$(sbatch_call)" $@
