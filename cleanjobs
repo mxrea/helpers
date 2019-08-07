@@ -9,7 +9,6 @@ elif [[ $1 != "" ]]; then
     echo "-h / --help: Display this message"
     echo "--delete: Delete cluster logs rather than moving them"
 else
-    #TODAY=$(date +"%Y-%m-%d")
-    #mkdir -p cluster_logs/$TODAY
+    # Defaults to sorting under last modified date
     find . -maxdepth 1 -regextype posix-extended -regex $REGEX -exec bash -c 'TODAY=$(stat -c %y "$1" | cut -f 1 -d " "); mkdir -p cluster_logs/$TODAY; mv $1 cluster_logs/$TODAY' _ {} \;
 fi
