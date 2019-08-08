@@ -8,4 +8,4 @@ read -e -p "Command: " -i "$COMMAND" COMMAND
 
 name="${1/\.\//}"
 
-cat ~/opt/slurm/smalljob.slurm <(echo $COMMAND) | sbatch --job-name="$name"
+cat ~/opt/slurm/customjob.slurm <(echo $COMMAND) | sbatch --job-name="$name"
