@@ -8,4 +8,4 @@ read -e -p "Command: " -i "$COMMAND" COMMAND
 
 name="${1/\.\//}"
 
-cat ~/opt/slurm/customjob.slurm <(echo $COMMAND) | sbatch --job-name="$name"
+CPUS="$CPUS" MEM="$MEM" TIME="$TIME" COMMAND="$COMMAND" perl -p -i -e 's/\$\{([^}]+)\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' < ~/opt/slurm/customjob.slurm | sbatch --job-name="$name"

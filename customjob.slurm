@@ -8,10 +8,9 @@
 #SBATCH --output=%x-%j.slurm.out
 
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task={$CPUS}
-#SBATCH --mem={$MEM}G
-#SBATCH --time={$TIME}:00:00
-# SBATCH --time=40:00:00
+#SBATCH --cpus-per-task=${CPUS}
+#SBATCH --mem=${MEM}G
+#SBATCH --time=${TIME}:00:00
 
 #TODO
 #SBATCH --account=test
@@ -19,3 +18,5 @@
 #SBATCH --qos=normal
 
 ####  End SBATCH preamble
+
+${COMMAND}
