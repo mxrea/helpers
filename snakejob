@@ -6,7 +6,7 @@ sbatch_call() {
          "-J {cluster.job-name}" \
          "--mail-user=$USER@umich.edu" \
          "--mail-type=BEGIN,END,FAIL" \
-         "--output=%x-%j.slurm.out" \
+         "--output={cluster.job-name}-%j.slurm.out" \
          "--nodes={cluster.nodes}" \
          "--cpus-per-task={cluster.cpus-per-task}" \
          "--mem={cluster.mem}" \
@@ -27,4 +27,5 @@ make_cluster_config() {
     fi
 }
 
+# Possibly decrease latency wait.
 snakemake --latency-wait 60 --cluster-config $(make_cluster_config) --cluster "$(sbatch_call)" $@
