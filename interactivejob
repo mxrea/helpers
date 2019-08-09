@@ -10,5 +10,5 @@ srun \
      --mail-type=NONE \
      --account=test \
      --partition=standard \
-     --qos=normal \
+     --qos=interactive \
      --pty /bin/bash
