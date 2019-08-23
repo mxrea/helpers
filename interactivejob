@@ -8,7 +8,7 @@ srun \
      --time=10:00:00 \
      --mail-user=$USER@umich.edu \
      --mail-type=NONE \
-     --account=test \
+     --account=kykwan \
      --partition=standard \
      --qos=interactive \
      --pty /bin/bash
