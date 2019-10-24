@@ -21,7 +21,7 @@
 while :
 do
     for f in /scratch/kykwan_root/kykwan/shared_data/jobs/*.sh; do
-        bash "$f" -H > "${f}.out"
-        mv "$f" "${f}.done"
+        bash "$f" -H > "${f}.out" && mv "$f" "${f}.done" &
     done
+    wait
 done
