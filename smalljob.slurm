@@ -9,10 +9,9 @@
 
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=8G
+#SBATCH --mem=7G
 #SBATCH --time=40:00:00
 
-#TODO
 #SBATCH --account=kykwan
 #SBATCH --partition=standard
 #SBATCH --qos=normal

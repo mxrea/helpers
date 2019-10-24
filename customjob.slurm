@@ -12,7 +12,6 @@
 #SBATCH --mem=${MEM}G
 #SBATCH --time=${TIME}:00:00
 
-#TODO
 #SBATCH --account=kykwan
 #SBATCH --partition=standard
 #SBATCH --qos=normal
