@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+cat ~/opt/slurm/externaljob.slurm | sbatch --job-name="kwan"
