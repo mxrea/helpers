@@ -13,7 +13,7 @@
 #SBATCH --time=80:00:00
 
 # TODO
-#SBATCH --account=test
+#SBATCH --account=kykwan
 #SBATCH --partition=standard
 #SBATCH --qos=normal
 
