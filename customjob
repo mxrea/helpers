@@ -6,6 +6,6 @@ read -e -p "Time (Hours): " -i "80" TIME
 COMMAND=$@
 read -e -p "Command: " -i "$COMMAND" COMMAND
 
-name="${1/\.\//}"
+name="${COMMAND/\.\//}"
 
 CPUS="$CPUS" MEM="$MEM" TIME="$TIME" COMMAND="$COMMAND" perl -p -i -e 's/\$\{([^}]+)\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' < ~/opt/slurm/customjob.slurm | sbatch --job-name="$name"
