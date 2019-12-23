@@ -3,27 +3,27 @@
         "job-name": "{rule}.{wildcards.sample}",
         "nodes": "1",
         "cpus-per-task": "1",
-        "mem": "8G",
+        "mem": "7G",
         "time": "40:00:00"
     },
 
     "salmon_index": {
         "job-name": "{rule}",
-        "mem": "32G"
+        "mem": "35G"
     },
     "salmon_quant": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "star_index": {
         "job-name": "{rule}",
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "32G"
+        "mem": "56G"
     },
     "star": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "median_read_count": {
@@ -31,22 +31,22 @@
     },
     "salmon_star": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "salmon_star_nodedup": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "cufflinks": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "32G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "kallisto": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "salmon_index_cre": {
@@ -55,17 +55,17 @@
     },
     "salmon_quant_cre": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "star_ercc": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
     "salmon_star_ercc": {
         "cpus-per-task": "{NUM_THREADS}",
-        "mem": "64G",
+        "mem": "56G",
         "time": "80:00:00"
     },
 
