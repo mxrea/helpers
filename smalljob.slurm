@@ -12,7 +12,7 @@
 #SBATCH --mem=7G
 #SBATCH --time=40:00:00
 
-#SBATCH --account=kykwan
+#SBATCH --account=kykwan1
 #SBATCH --partition=standard
 #SBATCH --qos=normal
 
