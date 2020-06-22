@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+# Configuration variables (Directories have no trailing /)
+export syncscripts_source="/scratch/kykwan_root/kykwan/$USER"
+export syncscripts_destination="/home/$USER/scripts"
+
+# Function to copy a file from scratch to the correct place in the home directory
+syncscripts_copy_file() {
+    relative_path="$(realpath --relative-to="$syncscripts_source" "$(dirname "$1")")";
+    mkdir -p "$syncscripts_destination/$relative_path"
+    cp "$1" "$syncscripts_destination/$relative_path"
+}
+export -f syncscripts_copy_file
+
+# Unset above variables and function after the script completes
+function cleanup {
+    unset syncscripts_source syncscripts_destination
+    unset -f syncscripts_copy_file
+}
+trap cleanup EXIT
+
+# Check if directory exists
+if [ ! -d "$syncscripts_destination" ]; then
+    # Make syncscripts_destination
+    mkdir -p "$syncscripts_destination"
+    git init "$syncscripts_destination"
+fi
+
+# Find all scripts and execute copy_file function on each file
+find "$syncscripts_source" \
+     -type d \
+     \( -name ".snakemake" \
+     -o -name ".ipynb_checkpoints" \
+     -o -name "lib" \
+     \) -prune \
+     -o -type f \
+     \( -name '*.py' \
+     -o -name '*.ipynb' \
+     -o -name '*.sh' \
+     -o -name 'Snakefile' \
+     -o -name '*.R' \
+     \) -print \
+     -exec bash -c 'syncscripts_copy_file "$@"' bash {} \;
+
+# Commit changes to git
+git --work-tree="$syncscripts_destination" --git-dir="$syncscripts_destination/.git" add -A
+git --work-tree="$syncscripts_destination" --git-dir="$syncscripts_destination/.git" commit -m "$(date)"
