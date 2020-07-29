@@ -1,0 +1,6 @@
+host: gl3368.arc-ts.umich.edu
+port: 56854
+password: yamanq
+display: 2
+websocket: 63993
+spassword: yamanq

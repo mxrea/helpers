@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+read -e -p "Modules: " M_LOADED
+ml $M_LOADED
+
+SERVER_HOME_DIR="/home/$USER/opt/jupyter"
+customjob "${SERVER_HOME_DIR}/jupyter_server.sh"
+
+watch -n 5 "${SERVER_HOME_DIR}/url.txt"
