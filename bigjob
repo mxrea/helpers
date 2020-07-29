@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-name="${1/\.\//}"
-cat ~/opt/slurm/bigjob.slurm <(echo $@) | sbatch --job-name="$name"
