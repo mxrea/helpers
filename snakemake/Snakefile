@@ -1,0 +1,474 @@
+"""
+Process Nex Synapto and Soma read data with a 8bp UMI with Clickseq QC
+
+Author: Adel Qalieh
+Affiliation: University of Michigan
+Date: Tue Jan  9 12:11:15 EST 2018
+"""
+import os.path
+
+# Reference files
+CDNA = "reference/cdna/Mus_musculus.GRCm38.cdna.biomart.fa.gz"
+CDNA_CRE = "reference/cdna/Mus_musculus.GRCm38.cdna.cre.fa.gz"
+SALMON_INDEX = "reference/cdna/GRCm38_gene_index_short"
+SALMON_INDEX_CRE = "reference/cdna/GRCm38_gene_index_cre"
+KALLISTO_INDEX = "reference/cdna/GRCm38_kallisto"
+STAR_INDEX = "reference/dna/star_index"
+GENE_LIST = "reference/gtf/Mus_musculus.GRCm38.tsv"
+CRE_GENE_LIST = "reference/gtf/Mus_musculus.GRCm38.cre.tsv"
+GENOME = "reference/dna/GRCm38.primary_assembly.genome.fa"
+GTF = "reference/gtf/gencode.vM14.primary_assembly.annotation.gtf"
+STAR_FA = "reference/cdna/star_transcriptome.fa"
+GTF_BED = "reference/gtf/mm10_gencode_vm11_basic.bed"
+
+# Build options
+## Output directories
+SALMON_OUT_DIR = "quant_salmon"
+STAR_OUT_DIR = "quant_star"
+STARND_OUT_DIR = "quant_star_nodedup"
+KALLISTO_OUT_DIR = "quant_kallisto"
+CRE_OUT_DIR = "quant_cre"
+ERCC_OUT_DIR = "quant_ercc"
+ERCC_NODEDUP_OUT_DIR = "quant_ercc_nodedup"
+
+## Intermediate directories
+MAP_DIR = "star"
+# FASTQ_DIR = "raw_data/"
+FASTQ_DIR = "raw_data/"
+FASTQC_DIR = "fastqc/"
+TRIM_FASTQC_DIR = "trim_fastqc/"
+TRIM_DIR = "trim"
+UMI_EX_DIR = "umi_names"
+DEDUP_DIR = "dedup"
+COUNTS_GENOME_DIR = "counts_genome"
+
+DEDUP_DISTR_DIR = "distr_dedup"
+NODEDUP_DISTR_DIR = "distr_nodedup"
+
+## Input samples
+SAMPLES, = glob_wildcards("raw_data/{sample}.fastq.gz")
+
+# Snake variables
+READ_PATTERN = "{sample}.fastq.gz"
+ALIGN_PATTERN = "{sample}.bam"
+NUM_THREADS = 8
+
+# Sequence parameters
+UMI_LEN = 8
+READ_LEN = 336
+READ_SD = 126
+RT_PRIMER = 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
+FULL_PRIMER = 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCACNNNNNNATCTCGTATGCCGTCTTCTGCTTG'
+
+# ERCC
+ERCC_GENOME = "reference/dna/GRCm38.primary_assembly.ERCC.genome.fa"
+ERCC_GTF = "reference/gtf/gencode.vM14.primary_assembly.ERCC.annotation.gtf"
+ERCC_STAR_INDEX = "reference/dna/star_ercc_index"
+ERCC_STAR_FA = "reference/cdna/star_transcriptome_ercc.fa"
+ERCC_MAP_DIR = "ercc_star"
+ERCC_DEDUP_DIR = "ercc_dedup"
+
+def out(*dirs):
+    return expand(os.path.join(*dirs), sample=SAMPLES)
+
+rule all:
+    input:
+        out(FASTQC_DIR, "{sample}_fastqc.html"),
+        out(TRIM_FASTQC_DIR, "{sample}_fastqc.html"),
+        out(SALMON_OUT_DIR, "{sample}", "quant.genes.sf"),
+        out(STAR_OUT_DIR, "{sample}", "quant.sf"),
+        # out(STARND_OUT_DIR, "{sample}", "quant.sf"),
+        out(KALLISTO_OUT_DIR, "{sample}", "abundance.h5"),
+        out(CRE_OUT_DIR, "{sample}", "quant.genes.sf"),
+        out(ERCC_OUT_DIR, "{sample}", "quant.sf"),
+        # out(ERCC_NODEDUP_OUT_DIR, "{sample}", "quant.sf"),
+        out(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam.bai"),
+        out(MAP_DIR, "{sample}Genome.dedup.bam.bai"),
+        # out(DEDUP_DISTR_DIR, "{sample}.txt"),
+        # out(NODEDUP_DISTR_DIR, "{sample}.txt"),
+        out(COUNTS_GENOME_DIR, "{sample}.tsv"),
+
+rule fastqc:
+    input: os.path.join(FASTQ_DIR, READ_PATTERN)
+    output: os.path.join(FASTQC_DIR, "{sample}_fastqc.html")
+    log: "logs/{sample}_fastqc.log"
+    shell: "fastqc --outdir {FASTQC_DIR} {input} &> {log}"
+
+rule fastqc_trim:
+    input: os.path.join(TRIM_DIR, READ_PATTERN)
+    output: os.path.join(TRIM_FASTQC_DIR, "{sample}_fastqc.html")
+    log: "logs/{sample}_fastqc_trim.log"
+    shell: "fastqc --outdir {TRIM_FASTQC_DIR} {input} &> {log}"
+
+rule umi_extract:
+    input:
+        r = os.path.join(FASTQ_DIR, READ_PATTERN)
+    output:
+        os.path.join(UMI_EX_DIR, "{sample}.fastq.gz")
+    params:
+        pattern = "N" * UMI_LEN
+    log:
+        "logs/{sample}_umi_extract.log"
+    shell:
+        """
+        umi_tools extract \
+            --stdin {input.r} \
+            --stdout {output} \
+            --extract-method=string \
+            --bc-pattern={params.pattern} \
+            --log {log}
+        """
+
+rule cutadapt:
+    input:
+        r = os.path.join(UMI_EX_DIR, READ_PATTERN)
+    output:
+        os.path.join(TRIM_DIR, "{sample}.fastq.gz")
+    log:
+        "logs/{sample}_cutadapt.log"
+    shell:
+        """
+        cutadapt \
+            -o {TRIM_DIR}/{wildcards.sample}.fastq.gz \
+            -b {FULL_PRIMER} \
+            --cut 2 \
+            --discard-trimmed \
+            {input.r} \
+            &> {log}
+        """
+
+rule salmon_index:
+    input: CDNA
+    output: os.path.join(SALMON_INDEX, "sa.bin")
+    log: "logs/salmon_index.log"
+    shell:
+        "salmon --no-version-check index -t {input} -i {output} -k 19 &> {log}"
+
+rule salmon_quant:
+    input:
+        index = SALMON_INDEX,
+        r = os.path.join(TRIM_DIR, READ_PATTERN)
+    output:
+        os.path.join(SALMON_OUT_DIR, "{sample}", "quant.genes.sf")
+    log:
+        "logs/{sample}_salmon_quant.log"
+    shell:
+        """
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -r {input.r} \
+            -i {input.index} \
+            -o {SALMON_OUT_DIR}/{wildcards.sample} \
+            -g {GENE_LIST} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noLengthCorrection \
+            &> {log}
+        """
+
+rule star_index:
+    input:
+        genome = GENOME,
+        gtf = GTF
+    output:
+        STAR_INDEX
+    log:
+        "logs/star_index.log"
+    shell:
+        """
+        mkdir -p {STAR_INDEX}
+        STAR --runMode genomeGenerate \
+             --genomeDir {STAR_INDEX} \
+             --genomeFastaFiles {input.genome} \
+             --sjdbGTFfile {input.gtf} \
+             --runThreadN {NUM_THREADS} \
+             &> {log}
+        """
+
+rule star:
+    input:
+        genome = STAR_INDEX,
+        r = os.path.join(TRIM_DIR, READ_PATTERN)
+    output:
+        os.path.join(MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam"),
+        os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam")
+    log:
+        "logs/{sample}_star.log"
+    shell:
+        """
+        STAR --genomeDir {input.genome} \
+             --readFilesIn {input.r} \
+             --readFilesCommand zcat \
+             --outFileNamePrefix {MAP_DIR}/{wildcards.sample} \
+             --quantMode TranscriptomeSAM \
+             --outSAMtype BAM SortedByCoordinate \
+             --runThreadN {NUM_THREADS} \
+             &> {log}
+        """
+
+rule index_bam:
+    input:  os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam")
+    output: os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam.bai")
+    shell:  "samtools index {input}"
+
+rule index_bam_genome:
+    input:  os.path.join(MAP_DIR, "{sample}Genome.dedup.bam")
+    output: os.path.join(MAP_DIR, "{sample}Genome.dedup.bam.bai")
+    shell:  "samtools index {input}"
+
+rule umi_dedup:
+    input:
+        bam = os.path.join(MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam")
+    output:
+        sorted_bam = temp(os.path.join(MAP_DIR, "{sample}Aligned.toTranscriptome.sorted.bam")),
+        dedup_bam = os.path.join(DEDUP_DIR, "{sample}.bam")
+    log:
+        "logs/{sample}_dedup.log"
+    shell:
+        """
+        samtools sort {input.bam} -o {output.sorted_bam}
+        samtools index {output.sorted_bam}
+        umi_tools dedup \
+            -I {output.sorted_bam} \
+            -S {output.dedup_bam} \
+            --log {log}
+        samtools collate {output.dedup_bam} {DEDUP_DIR}/{wildcards.sample}
+        """
+
+rule salmon_star:
+    input:
+        bam = os.path.join(DEDUP_DIR, "{sample}.bam"),
+        fa = STAR_FA
+    output:
+        os.path.join(STAR_OUT_DIR, "{sample}", "quant.sf")
+    log:
+        "logs/{sample}_salmon_star.log"
+    shell:
+        """
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -t {input.fa} \
+            -a {input.bam} \
+            -o {STAR_OUT_DIR}/{wildcards.sample} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noEffectiveLengthCorrection \
+            &> {log}
+        """
+
+rule salmon_star_nodedup:
+    input:
+        bam = os.path.join(MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam"),
+        fa = STAR_FA
+    output:
+        os.path.join(STARND_OUT_DIR, "{sample}", "quant.sf")
+    log:
+        "logs/{sample}_salmon_star_nodedup.log"
+    shell:
+        """
+        samtools collate {input.bam} {MAP_DIR}/{wildcards.sample}
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -t {input.fa} \
+            -a {MAP_DIR}/{wildcards.sample}.bam \
+            -o {STARND_OUT_DIR}/{wildcards.sample} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noEffectiveLengthCorrection \
+            &> {log}
+        """
+
+rule umi_dedup_genome:
+    input:
+        bam = os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam"),
+        idx = os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam.bai")
+    output:
+        dedup_bam = os.path.join(MAP_DIR, "{sample}Genome.dedup.bam")
+    log:
+        "logs/{sample}_genome_dedup.log"
+    shell:
+        """
+        umi_tools dedup \
+            -I {input.bam} \
+            -S {output.dedup_bam} \
+            --log {log}
+        """
+
+rule kallisto:
+    input:
+        index = KALLISTO_INDEX,
+        r = os.path.join(TRIM_DIR, READ_PATTERN)
+    output:
+        os.path.join(KALLISTO_OUT_DIR, "{sample}", "abundance.h5")
+    log:
+        "logs/{sample}_kallisto_quant.log"
+    shell:
+        """
+        kallisto quant \
+            --index={input.index} \
+            --output-dir={KALLISTO_OUT_DIR}/{wildcards.sample} \
+            --bootstrap-samples=30 \
+            --single --fr-stranded \
+            --fragment-length={READ_LEN} \
+            --sd={READ_SD} \
+            --threads={NUM_THREADS} \
+            {input.r} \
+            &> {log}
+        """
+
+rule read_distribution_nodedup:
+    input:  os.path.join(MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam")
+    output: os.path.join(NODEDUP_DISTR_DIR, "{sample}.txt")
+    shell:
+        """
+        module del python-anaconda3
+        module add python-anaconda2
+        read_distribution.py -i {input} -r {GTF_BED} &> {output}
+        module del python-anaconda2
+        module add python-anaconda3
+        """
+
+rule htseq_count_genome:
+    input: os.path.join(MAP_DIR, "{sample}Genome.dedup.bam")
+    output: os.path.join(COUNTS_GENOME_DIR, "{sample}.tsv")
+    shell:
+        """
+        module del python-anaconda3
+        module add python-anaconda2
+        htseq-count \
+            --format bam \
+            --mode intersection-nonempty \
+            --type gene \
+            {input} {GTF} > {output}
+        module del python-anaconda2
+        module add python-anaconda3
+        """
+
+# ERCC rules
+
+rule star_ercc_index:
+    input:
+        genome = ERCC_GENOME,
+        gtf = ERCC_GTF
+    output:
+        ERCC_STAR_INDEX
+    shell:
+        """
+        mkdir -p {ERCC_STAR_INDEX}
+        STAR --runMode genomeGenerate \
+             --genomeDir {ERCC_STAR_INDEX} \
+             --genomeFastaFiles {input.genome} \
+             --sjdbGTFfile {input.gtf} \
+             --runThreadN {NUM_THREADS}
+        """
+
+rule star_ercc:
+    input:
+        genome = ERCC_STAR_INDEX,
+        r = os.path.join(TRIM_DIR, READ_PATTERN)
+    output:
+        os.path.join(ERCC_MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam"),
+        os.path.join(ERCC_MAP_DIR, "{sample}Aligned.sortedByCoord.out.bam")
+    shell:
+        """
+        STAR --genomeDir {input.genome} \
+             --readFilesIn {input.r} \
+             --readFilesCommand zcat \
+             --outFileNamePrefix {ERCC_MAP_DIR}/{wildcards.sample} \
+             --quantMode TranscriptomeSAM \
+             --outSAMtype BAM SortedByCoordinate \
+             --runThreadN {NUM_THREADS}
+        """
+
+rule umi_dedup_ercc:
+    input:
+        bam = os.path.join(ERCC_MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam")
+    output:
+        sorted_bam = temp(os.path.join(ERCC_MAP_DIR, "{sample}Aligned.toTranscriptome.sorted.bam")),
+        dedup_bam = os.path.join(ERCC_DEDUP_DIR, "{sample}.bam")
+    shell:
+        """
+        samtools sort {input.bam} -o {output.sorted_bam}
+        samtools index {output.sorted_bam}
+        umi_tools dedup \
+            -I {output.sorted_bam} \
+            -S {output.dedup_bam}
+        samtools collate {output.dedup_bam} {ERCC_DEDUP_DIR}/{wildcards.sample}
+        """
+
+rule salmon_star_ercc:
+    input:
+        bam = os.path.join(ERCC_DEDUP_DIR, "{sample}.bam"),
+        fa = ERCC_STAR_FA
+    output:
+        os.path.join(ERCC_OUT_DIR, "{sample}", "quant.sf")
+    shell:
+        """
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -t {input.fa} \
+            -a {input.bam} \
+            -o {ERCC_OUT_DIR}/{wildcards.sample} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noEffectiveLengthCorrection
+        """
+
+rule salmon_star_nodedup_ercc:
+    input:
+        bam = os.path.join(ERCC_MAP_DIR, "{sample}Aligned.toTranscriptome.out.bam"),
+        fa = ERCC_STAR_FA
+    output:
+        os.path.join(ERCC_NODEDUP_OUT_DIR, "{sample}", "quant.sf")
+    shell:
+        """
+        samtools collate {input.bam} {ERCC_MAP_DIR}/{wildcards.sample}
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -t {input.fa} \
+            -a {ERCC_MAP_DIR}/{wildcards.sample}.bam \
+            -o {ERCC_NODEDUP_OUT_DIR}/{wildcards.sample} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noEffectiveLengthCorrection
+        """
+
+rule salmon_index_cre:
+    input: CDNA_CRE
+    output: os.path.join(SALMON_INDEX_CRE, "sa.bin")
+    log: "logs/salmon_index_cre.log"
+    shell: "salmon --no-version-check index -t {input} -i {output} -k 17 &> {log}"
+
+rule salmon_quant_cre:
+    input:
+        index = SALMON_INDEX_CRE,
+        r = os.path.join(TRIM_DIR, READ_PATTERN)
+    output:
+        os.path.join(CRE_OUT_DIR, "{sample}", "quant.genes.sf")
+    log:
+        "logs/{sample}_salmon_quant_cre.log"
+    shell:
+        """
+        salmon --no-version-check quant \
+            -p {NUM_THREADS} -l SF \
+            -r {input.r} \
+            -i {input.index} \
+            -o {CRE_OUT_DIR}/{wildcards.sample} \
+            -g {CRE_GENE_LIST} \
+            --useVBOpt \
+            --numBootstraps 30 \
+            --fldMean {READ_LEN} \
+            --fldSD {READ_SD} \
+            --noLengthCorrection \
+            &> {log}
+        """

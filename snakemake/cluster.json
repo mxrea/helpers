@@ -1,0 +1,101 @@
+{
+    "__default__": {
+        "job-name": "{rule}.{wildcards.sample}",
+        "nodes": "1",
+        "cpus-per-task": "1",
+        "mem": "7G",
+        "time": "40:00:00"
+    },
+
+    "salmon_index": {
+        "job-name": "{rule}",
+        "mem": "35G"
+    },
+    "salmon_quant": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "star_index": {
+        "job-name": "{rule}",
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G"
+    },
+    "star": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "median_read_count": {
+        "job-name": "{rule}"
+    },
+    "salmon_star": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "salmon_star_nodedup": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "cufflinks": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "kallisto": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "salmon_index_cre": {
+        "job-name": "{rule}",
+        "mem": "32G"
+    },
+    "salmon_quant_cre": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "star_ercc": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+    "salmon_star_ercc": {
+        "cpus-per-task": "{NUM_THREADS}",
+        "mem": "56G",
+        "time": "80:00:00"
+    },
+
+    "bwa_index": {
+        "job-name": "{rule}",
+        "mem": "32G"
+    },
+    "bwa": {
+        "mem": "16G",
+        "time": "120:00:00"
+    },
+    "hmmr": {
+        "mem": "16G",
+        "time": "120:00:00"
+    },
+    "bamcompare": {
+        "job-name": "{rule}",
+        "time": "80:00:00"
+    },
+    "macs2": {
+        "mem": "16G",
+        "time": "80:00:00"
+    },
+    "bedtools_hmmr": {
+        "job-name": "{rule}@{condition}"
+    },
+    "bedtools_unique": {
+        "job-name": "{rule}@{condition}"
+    },
+    "nucleoatac": {
+        "time": "80:00:00"
+    }
+}
