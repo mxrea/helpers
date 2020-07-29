@@ -4,7 +4,7 @@ ml $M_LOADED
 
 SERVER_HOME_DIR="/home/$USER/opt/jupyter"
 
-cat "Loading Server..." > "${SERVER_HOME_DIR}/url.txt"
+echo "Loading Server..." > "${SERVER_HOME_DIR}/url.txt"
 customjob "${SERVER_HOME_DIR}/jupyter_server.sh"
 
 watch -n 5 "cat ${SERVER_HOME_DIR}/url.txt"
