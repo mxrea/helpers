@@ -11,7 +11,7 @@ sbatch_call() {
          "--cpus-per-task={cluster.cpus-per-task}" \
          "--mem={cluster.mem}" \
          "--time={cluster.time}" \
-         "--account=kykwan99" \
+         "--account=kykwan0" \
          "--partition=standard" \
          "--qos=normal"
 }
