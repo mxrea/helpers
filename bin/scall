@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+if [[ $1 == "--help" || $1 == "-h" ]]; then
+    echo "Usage: scall [OPTION] OR scall"
+    echo "Input the snakejob-{JOBID}.slurm.out file after scall to cancel that job and all jobs it creates"
+    echo "Input only scall to cancel all jobs running from your account"
+
+elif [[ $1 != "" ]]; then
+
+    
+    first_cancel=$(basename "$1" | cut -d '-' -f 2 | cut -d '.' -f 1)
+    echo "Cancelling root job: $first_cancel"
+    scancel "$first_cancel"
+
+    file_name=$(basename $1)
+    other_jobs=$(grep 'Submitted batch job' "$file_name"| cut -d " " -f 10 | cut -d "'" -f 1 | paste -s -d " ")
+    echo "Cancelling spawned jobs: $other_jobs"
+    scancel $other_jobs
+
+    check_file=$(basename "$1" | cut -d '-' -f 1 )
+    if [[ check_file == "snakejob" ]]; then
+        echo "Unlocking Snakemake directory"
+        snakemake --unlock --directory "$(dirname "$1")"
+    fi
+
+else
+    USER=$(whoami)
+    scancel -u $USER
+    echo "Cancelling all jobs for $USER"
+fi
